@@ -1,20 +1,23 @@
 // src/objects/Tetromino.js
+
+import gameConfig from "../config/gameConfig.js";
+
 export default class Tetromino {
   constructor(scene, shape = "I", player = "player1") {
     this.scene = scene;
     this.shape = shape;
     this.player = player;
-    this.color = this.getShapeColor(shape);
+    // Store the hex color string
+    this.color = gameConfig.players[player].color;
     this.blocks = this.getShapeBlocks(shape);
 
-    // Set initial position based on player
-    this.y = Math.floor(scene.gridHeight / 2) - 1; // Vertical center
+    // Set initial position based on player config
+    this.y = Math.floor(scene.gridHeight / 2) - 1;
 
-    // Set horizontal position based on player
-    if (player === "player1") {
-      this.x = 0; // Left side
+    if (gameConfig.players[player].spawnSide === "left") {
+      this.x = 0;
     } else {
-      this.x = scene.gridWidth - this.getWidth(); // Right side
+      this.x = scene.gridWidth - this.getWidth();
     }
   }
 
@@ -131,7 +134,8 @@ export default class Tetromino {
   }
 
   draw(graphics) {
-    graphics.fillStyle(this.color, 1);
+    // Convert hex color to number when drawing
+    graphics.fillStyle(gameConfig.getColor(this.color), 1);
     this.blocks.forEach(([blockX, blockY]) => {
       graphics.fillRect(
         this.scene.gridOffsetX + (this.x + blockX) * this.scene.cellSize,

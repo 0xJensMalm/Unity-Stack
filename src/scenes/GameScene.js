@@ -1,14 +1,18 @@
 // src/scenes/GameScene.js
 import Grid from "../objects/Grid.js";
 import Tetromino from "../objects/Tetromino.js";
+import gameConfig from "../config/gameConfig.js";
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: "GameScene" });
-    this.cellSize = 32; // Slightly larger cells
-    this.gridWidth = 24; // Wider horizontal playing field
-    this.gridHeight = 12; // Taller vertical height
-    this.moveSpeed = 1000; // Time in ms between automatic moves
+
+    // Get values from config
+    this.cellSize = gameConfig.playfield.cellSize;
+    this.gridWidth = gameConfig.playfield.width;
+    this.gridHeight = gameConfig.playfield.height;
+    this.moveSpeed = gameConfig.mechanics.initialMoveSpeed;
+
     this.lastMove = {
       player1: 0,
       player2: 0,
@@ -16,9 +20,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // Calculate grid position to center it
-    this.gridOffsetX = (800 - this.gridWidth * this.cellSize) / 2;
-    this.gridOffsetY = (600 - this.gridHeight * this.cellSize) / 2;
+    // Calculate grid position using config helpers
+    this.gridOffsetX = gameConfig.getGridOffsetX();
+    this.gridOffsetY = gameConfig.getGridOffsetY();
 
     // Initialize grid and graphics
     this.grid = new Grid(this.gridWidth, this.gridHeight);
@@ -104,8 +108,11 @@ export default class GameScene extends Phaser.Scene {
     const graphics = this.gridGraphics;
     graphics.clear();
 
-    // Draw grid background
-    graphics.lineStyle(2, 0x444444);
+    // Draw grid background with converted colors
+    graphics.lineStyle(
+      gameConfig.playfield.gridBorderWidth,
+      gameConfig.getColor(gameConfig.playfield.gridBorderColor)
+    );
     graphics.strokeRect(
       this.gridOffsetX,
       this.gridOffsetY,
@@ -113,8 +120,11 @@ export default class GameScene extends Phaser.Scene {
       this.gridHeight * this.cellSize
     );
 
-    // Draw grid lines
-    graphics.lineStyle(1, 0x333333);
+    // Draw grid lines with converted colors
+    graphics.lineStyle(
+      gameConfig.playfield.gridLineWidth,
+      gameConfig.getColor(gameConfig.playfield.gridLineColor)
+    );
 
     // Vertical lines
     for (let x = 0; x <= this.gridWidth; x++) {
@@ -157,6 +167,16 @@ export default class GameScene extends Phaser.Scene {
     // Draw current pieces
     Object.values(this.currentPieces).forEach((piece) => {
       piece.draw(graphics);
+    });
+  }
+
+  lockPiece(player) {
+    const piece = this.currentPieces[player];
+    piece.blocks.forEach(([blockX, blockY]) => {
+      const gridX = piece.x + blockX;
+      const gridY = piece.y + blockY;
+      // Store the converted color value
+      this.grid.setCellValue(gridX, gridY, gameConfig.getColor(piece.color));
     });
   }
 }
