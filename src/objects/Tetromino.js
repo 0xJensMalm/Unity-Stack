@@ -1,87 +1,93 @@
 // src/objects/Tetromino.js
 export default class Tetromino {
-  constructor(scene, shape = "I") {
+  constructor(scene, shape = "I", player = "player1") {
     this.scene = scene;
     this.shape = shape;
+    this.player = player;
     this.color = this.getShapeColor(shape);
     this.blocks = this.getShapeBlocks(shape);
-    this.x = Math.floor(scene.grid.width / 2) - 1;
-    this.y = 0;
+
+    // Set initial position based on player
+    this.y = Math.floor(scene.gridHeight / 2) - 1; // Vertical center
+
+    // Set horizontal position based on player
+    if (player === "player1") {
+      this.x = 0; // Left side
+    } else {
+      this.x = scene.gridWidth - this.getWidth(); // Right side
+    }
   }
 
   getShapeColor(shape) {
     const colors = {
-      I: 0x00f0f0,
-      O: 0xf0f000,
-      T: 0xa000f0,
-      S: 0x00f000,
-      Z: 0xf00000,
-      J: 0x0000f0,
-      L: 0xf0a000,
+      I: 0x00f0f0, // Cyan
+      O: 0xf0f000, // Yellow
+      T: 0xa000f0, // Purple
+      S: 0x00f000, // Green
+      Z: 0xf00000, // Red
+      J: 0x0000f0, // Blue
+      L: 0xf0a000, // Orange
     };
     return colors[shape] || 0xffffff;
   }
 
   getShapeBlocks(shape) {
-    // Define basic shape patterns
+    // Horizontal-oriented shapes
     const shapes = {
       I: [
         [0, 0],
-        [0, 1],
-        [0, 2],
-        [0, 3],
+        [1, 0],
+        [2, 0],
+        [3, 0],
       ],
       O: [
         [0, 0],
-        [0, 1],
         [1, 0],
+        [0, 1],
         [1, 1],
       ],
       T: [
-        [0, 1],
+        [0, 0],
         [1, 0],
+        [2, 0],
         [1, 1],
-        [1, 2],
       ],
       S: [
-        [0, 1],
-        [0, 2],
         [1, 0],
+        [2, 0],
+        [0, 1],
         [1, 1],
       ],
       Z: [
         [0, 0],
-        [0, 1],
+        [1, 0],
         [1, 1],
-        [1, 2],
+        [2, 1],
       ],
       J: [
+        [0, 1],
         [0, 0],
         [1, 0],
-        [1, 1],
-        [1, 2],
+        [2, 0],
       ],
       L: [
-        [0, 2],
+        [2, 1],
+        [0, 0],
         [1, 0],
-        [1, 1],
-        [1, 2],
+        [2, 0],
       ],
     };
     return shapes[shape] || shapes["I"];
   }
 
-  moveLeft() {
-    this.x--;
-    if (!this.isValidPosition()) {
-      this.x++;
-    }
+  getWidth() {
+    return Math.max(...this.blocks.map(([x]) => x)) + 1;
   }
 
-  moveRight() {
-    this.x++;
+  moveUp() {
+    this.y--;
     if (!this.isValidPosition()) {
-      this.x--;
+      this.y++;
     }
   }
 
@@ -89,17 +95,36 @@ export default class Tetromino {
     this.y++;
     if (!this.isValidPosition()) {
       this.y--;
-      return false; // Indicates piece can't move down further
+    }
+  }
+
+  moveLeft() {
+    this.x--;
+    if (!this.isValidPosition()) {
+      this.x++;
+      return false;
+    }
+    return true;
+  }
+
+  moveRight() {
+    this.x++;
+    if (!this.isValidPosition()) {
+      this.x--;
+      return false;
     }
     return true;
   }
 
   isValidPosition() {
-    return this.blocks.every(([blockY, blockX]) => {
+    return this.blocks.every(([blockX, blockY]) => {
       const newX = this.x + blockX;
       const newY = this.y + blockY;
       return (
-        this.scene.grid.isWithinBounds(newX, newY) &&
+        newX >= 0 &&
+        newX < this.scene.gridWidth &&
+        newY >= 0 &&
+        newY < this.scene.gridHeight &&
         !this.scene.grid.getCellValue(newX, newY)
       );
     });
@@ -107,7 +132,7 @@ export default class Tetromino {
 
   draw(graphics) {
     graphics.fillStyle(this.color, 1);
-    this.blocks.forEach(([blockY, blockX]) => {
+    this.blocks.forEach(([blockX, blockY]) => {
       graphics.fillRect(
         this.scene.gridOffsetX + (this.x + blockX) * this.scene.cellSize,
         this.scene.gridOffsetY + (this.y + blockY) * this.scene.cellSize,
