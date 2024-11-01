@@ -1,4 +1,4 @@
-// Grid.js
+// src/objects/Grid.js
 export default class Grid {
   constructor(width, height) {
     this.width = width;
@@ -7,16 +7,34 @@ export default class Grid {
   }
 
   createGrid(width, height) {
-    const grid = [];
-    for (let y = 0; y < height; y++) {
-      const row = [];
-      for (let x = 0; x < width; x++) {
-        row.push(null);
-      }
-      grid.push(row);
-    }
-    return grid;
+    return Array(height)
+      .fill(null)
+      .map(() => Array(width).fill(null));
   }
 
-  // Define grid management methods here
+  isWithinBounds(x, y) {
+    return x >= 0 && x < this.width && y >= 0 && y < this.height;
+  }
+
+  setCellValue(x, y, value) {
+    if (this.isWithinBounds(x, y)) {
+      this.cells[y][x] = value;
+      return true;
+    }
+    return false;
+  }
+
+  getCellValue(x, y) {
+    if (this.isWithinBounds(x, y)) {
+      return this.cells[y][x];
+    }
+    return null;
+  }
+
+  isLineFull(y) {
+    if (y >= 0 && y < this.height) {
+      return this.cells[y].every((cell) => cell !== null);
+    }
+    return false;
+  }
 }
