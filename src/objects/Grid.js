@@ -31,9 +31,9 @@ export default class Grid {
     return null;
   }
 
-  isLineFull(y) {
-    if (y >= 0 && y < this.height) {
-      return this.cells[y].every((cell) => cell !== null);
+  isColumnFull(x) {
+    if (x >= 0 && x < this.width) {
+      return this.cells.every((row) => row[x] !== null);
     }
     return false;
   }

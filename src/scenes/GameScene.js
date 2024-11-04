@@ -62,24 +62,34 @@ export default class GameScene extends Phaser.Scene {
   }
 
   prepareNextPieces() {
-    this.nextPieces = {
+    // Generate new shapes for both players
+    const shapes = {
       player1: this.getRandomShape(),
       player2: this.getRandomShape(),
     };
+
+    // Update nextPieces
+    this.nextPieces = shapes;
+
+    // Update UI with next pieces
+    if (this.uiScene) {
+      Object.entries(shapes).forEach(([player, shape]) => {
+        this.uiScene.updateNextPiece(player, shape);
+      });
+    }
   }
 
   spawnNewPieces() {
-    // For each player that needs a new piece
     ["player1", "player2"].forEach((player) => {
       if (!this.currentPieces[player] || !this.currentPieces[player].isActive) {
-        // Use the next piece if available, otherwise get a random one
+        // Use the next piece if available
         const shape = this.nextPieces[player] || this.getRandomShape();
         this.currentPieces[player] = new Tetromino(this, shape, player);
 
-        // Prepare next piece
+        // Generate and show next piece
         this.nextPieces[player] = this.getRandomShape();
 
-        // Update UI with next piece
+        // Update UI preview
         if (this.uiScene) {
           this.uiScene.updateNextPiece(player, this.nextPieces[player]);
         }
@@ -100,7 +110,7 @@ export default class GameScene extends Phaser.Scene {
       this.uiScene.showGameOver(winningPlayer, this.scores);
     }
 
-    // Optional: Stop the game loop or provide restart option
+    // Stop the game loop
     this.scene.pause();
   }
 
@@ -129,6 +139,12 @@ export default class GameScene extends Phaser.Scene {
       }
     });
 
+    this.input.keyboard.on("keydown-E", () => {
+      if (!this.isPaused && !this.isGameOver) {
+        this.currentPieces.player1?.rotate();
+      }
+    });
+
     // Player 2 controls (Right side)
     this.input.keyboard.on("keydown-UP", () => {
       if (!this.isPaused && !this.isGameOver) {
@@ -145,6 +161,12 @@ export default class GameScene extends Phaser.Scene {
     this.input.keyboard.on("keydown-LEFT", () => {
       if (!this.isPaused && !this.isGameOver) {
         this.currentPieces.player2?.moveLeft();
+      }
+    });
+
+    this.input.keyboard.on("keydown-SPACE", () => {
+      if (!this.isPaused && !this.isGameOver) {
+        this.currentPieces.player2?.rotate();
       }
     });
 
@@ -192,52 +214,107 @@ export default class GameScene extends Phaser.Scene {
   }
 
   checkLines() {
-    let linesCleared = 0;
+    let columnsCleared = 0;
+    let clearedColumns = [];
 
-    // Check each line from bottom to top
-    for (let y = this.gridHeight - 1; y >= 0; y--) {
-      if (this.grid.isLineFull(y)) {
-        // Remove the line and shift everything down
-        this.removeLine(y);
-        linesCleared++;
-        // Since everything shifted down, we need to check this row again
-        y++;
+    // Check each column from left to right
+    for (let x = 0; x < this.gridWidth; x++) {
+      if (this.grid.isColumnFull(x)) {
+        clearedColumns.push(x);
+        columnsCleared++;
       }
     }
 
-    // Award points for cleared lines
-    if (linesCleared > 0) {
-      const points = linesCleared * gameConfig.mechanics.pointsPerLine;
-      // For now, award points to both players
-      this.scores.player1 += points;
-      this.scores.player2 += points;
+    // If columns were cleared, show effect before removing them
+    if (clearedColumns.length > 0) {
+      // Create effects for all cleared columns
+      clearedColumns.forEach((x) => {
+        this.createColumnClearEffect(x);
+      });
 
-      // Update UI
-      if (this.uiScene) {
-        this.uiScene.updateScore("player1", this.scores.player1);
-        this.uiScene.updateScore("player2", this.scores.player2);
-      }
+      // Delay the actual column removal
+      this.time.delayedCall(300, () => {
+        clearedColumns.forEach((x) => {
+          this.removeColumn(x);
+        });
 
-      // Increase game speed
-      this.moveSpeed = Math.max(
-        this.moveSpeed - gameConfig.mechanics.speedIncrease,
-        gameConfig.mechanics.minimumMoveSpeed
-      );
+        // Award points
+        const points = columnsCleared * gameConfig.mechanics.pointsPerLine;
+        this.scores.player1 += points;
+        this.scores.player2 += points;
+
+        // Update UI
+        if (this.uiScene) {
+          this.uiScene.updateScore("player1", this.scores.player1);
+          this.uiScene.updateScore("player2", this.scores.player2);
+        }
+
+        // Increase game speed
+        this.moveSpeed = Math.max(
+          this.moveSpeed - gameConfig.mechanics.speedIncrease,
+          gameConfig.mechanics.minimumMoveSpeed
+        );
+      });
     }
   }
 
-  removeLine(y) {
-    // Remove the line
-    for (let x = 0; x < this.gridWidth; x++) {
+  createColumnClearEffect(x) {
+    const effectGraphics = this.add.graphics();
+
+    // Create white flash effect
+    effectGraphics.fillStyle(0xffffff, 1);
+    effectGraphics.fillRect(
+      this.gridOffsetX + x * this.cellSize,
+      this.gridOffsetY,
+      this.cellSize,
+      this.gridHeight * this.cellSize
+    );
+
+    // Create blinking animation
+    let alpha = 1;
+    const flashTimer = this.time.addEvent({
+      delay: 50,
+      callback: () => {
+        alpha = alpha === 1 ? 0.3 : 1;
+        effectGraphics.clear();
+        effectGraphics.fillStyle(0xffffff, alpha);
+        effectGraphics.fillRect(
+          this.gridOffsetX + x * this.cellSize,
+          this.gridOffsetY,
+          this.cellSize,
+          this.gridHeight * this.cellSize
+        );
+      },
+      repeat: 5,
+    });
+
+    // Destroy effect after animation
+    this.time.delayedCall(300, () => {
+      effectGraphics.destroy();
+    });
+  }
+
+  removeColumn(x) {
+    // Remove the column
+    for (let y = 0; y < this.gridHeight; y++) {
       this.grid.setCellValue(x, y, null);
     }
 
-    // Shift all lines above down
-    for (let currentY = y - 1; currentY >= 0; currentY--) {
-      for (let x = 0; x < this.gridWidth; x++) {
-        const value = this.grid.getCellValue(x, currentY);
-        this.grid.setCellValue(x, currentY + 1, value);
-        this.grid.setCellValue(x, currentY, null);
+    // For pieces on the left of the cleared column, shift right
+    for (let currentX = x - 1; currentX >= 0; currentX--) {
+      for (let y = 0; y < this.gridHeight; y++) {
+        const value = this.grid.getCellValue(currentX, y);
+        this.grid.setCellValue(currentX + 1, y, value);
+        this.grid.setCellValue(currentX, y, null);
+      }
+    }
+
+    // For pieces on the right of the cleared column, shift left
+    for (let currentX = x + 1; currentX < this.gridWidth; currentX++) {
+      for (let y = 0; y < this.gridHeight; y++) {
+        const value = this.grid.getCellValue(currentX, y);
+        this.grid.setCellValue(currentX - 1, y, value);
+        this.grid.setCellValue(currentX, y, null);
       }
     }
   }
