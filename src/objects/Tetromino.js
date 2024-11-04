@@ -7,12 +7,12 @@ export default class Tetromino {
     this.scene = scene;
     this.shape = shape;
     this.player = player;
-    // Store the hex color string
     this.color = gameConfig.players[player].color;
     this.blocks = this.getShapeBlocks(shape);
+    this.isActive = true; // Add this line
 
-    // Set initial position based on player config
-    this.y = Math.floor(scene.gridHeight / 2) - 1;
+    // Adjust initial position based on player config
+    this.y = 0; // Start from the top
 
     if (gameConfig.players[player].spawnSide === "left") {
       this.x = 0;
@@ -123,13 +123,37 @@ export default class Tetromino {
     return this.blocks.every(([blockX, blockY]) => {
       const newX = this.x + blockX;
       const newY = this.y + blockY;
-      return (
-        newX >= 0 &&
-        newX < this.scene.gridWidth &&
-        newY >= 0 &&
-        newY < this.scene.gridHeight &&
-        !this.scene.grid.getCellValue(newX, newY)
-      );
+
+      // Check boundaries
+      if (
+        newX < 0 ||
+        newX >= this.scene.gridWidth ||
+        newY < 0 ||
+        newY >= this.scene.gridHeight
+      ) {
+        return false;
+      }
+
+      // Check collision with locked pieces
+      if (this.scene.grid.getCellValue(newX, newY)) {
+        return false;
+      }
+
+      // Check collision with other player's current piece
+      const otherPlayer = this.player === "player1" ? "player2" : "player1";
+      const otherPiece = this.scene.currentPieces[otherPlayer];
+
+      if (otherPiece) {
+        const collisionWithOther = otherPiece.blocks.some(
+          ([otherX, otherY]) =>
+            otherPiece.x + otherX === newX && otherPiece.y + otherY === newY
+        );
+        if (collisionWithOther) {
+          return false;
+        }
+      }
+
+      return true;
     });
   }
 

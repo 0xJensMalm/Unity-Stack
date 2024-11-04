@@ -1,16 +1,26 @@
-// BootScene.js
+// src/scenes/BootScene.js
 export default class BootScene extends Phaser.Scene {
   constructor() {
-    super({ key: 'BootScene' });
+    super({ key: "BootScene" });
   }
 
   preload() {
-    // Load assets here
-    // Example:
-    // this.load.image('I', 'assets/images/tetrominoes/I.png');
+    // Add a loading text
+    const loadingText = this.add.text(
+      this.cameras.main.centerX,
+      this.cameras.main.centerY,
+      "Loading...",
+      {
+        fontSize: "32px",
+        fill: "#fff",
+      }
+    );
+    loadingText.setOrigin(0.5);
   }
 
   create() {
-    this.scene.start('GameScene');
+    console.log("Boot Scene Created");
+    this.scene.start("GameScene");
+    this.scene.start("UIScene");
   }
 }

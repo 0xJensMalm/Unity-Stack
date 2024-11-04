@@ -3,14 +3,27 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Two-Player Tetris</title>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    #game {
+      margin: 0 auto;
+    }
+  </style>
 </head>
 
 <body>
-  <!-- The bundle.js will include Phaser via imports if you prefer, or you can keep using the CDN -->
+  <div id="game"></div>
   <script src="bundle.js"></script>
 </body>
 

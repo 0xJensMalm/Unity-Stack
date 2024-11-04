@@ -14,7 +14,7 @@
     "multiplayer",
     "game"
   ],
-  "author": "Your Name",
+  "author": "kromo",
   "license": "ISC",
   "devDependencies": {
     "@babel/core": "^7.21.0",

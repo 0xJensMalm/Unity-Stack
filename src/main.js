@@ -6,8 +6,20 @@ import GameScene from "./scenes/GameScene.js";
 import UIScene from "./scenes/UIScene.js";
 
 const config = {
-  ...gameConfig,
+  type: Phaser.AUTO,
+  parent: "game",
+  width: gameConfig.width,
+  height: gameConfig.height,
+  backgroundColor: gameConfig.backgroundColor,
   scene: [BootScene, GameScene, UIScene],
+  physics: {
+    default: "arcade",
+    arcade: {
+      debug: false,
+    },
+  },
 };
 
-const game = new Phaser.Game(config);
+window.addEventListener("load", () => {
+  new Phaser.Game(config);
+});
