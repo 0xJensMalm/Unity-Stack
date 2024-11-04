@@ -11,86 +11,115 @@ export default class UIScene extends Phaser.Scene {
   }
 
   create() {
-    const uiWidth = gameConfig.getUIWidth();
-    const gameWidth = gameConfig.getPlayfieldPixelWidth();
-    const totalWidth = gameConfig.width;
+    // Get grid dimensions and position
+    const gridStartX = gameConfig.getGridOffsetX();
+    const gridEndX = gridStartX + gameConfig.getPlayfieldPixelWidth();
 
-    // Create UI containers
-    // Left UI
-    this.createUIContainer(0, 0, uiWidth);
-    // Right UI
-    this.createUIContainer(totalWidth - uiWidth, 0, uiWidth);
+    // Calculate UI widths and positions
+    const uiWidth = gridStartX * 0.9; // Slightly smaller than available space
+    const leftX = gridStartX / 2; // Center of left panel
+    const rightX = gridEndX + gridStartX / 2; // Center of right panel
 
-    // Create player UIs
-    this.createPlayerUI("player1", uiWidth / 2);
-    this.createPlayerUI("player2", totalWidth - uiWidth / 2);
+    // Create UI containers with backgrounds
+    this.createUIPanel(leftX - uiWidth / 2, 0, uiWidth, "player1");
+    this.createUIPanel(rightX - uiWidth / 2, 0, uiWidth, "player2");
   }
 
-  createUIContainer(x, y, width) {
+  createUIPanel(x, y, width, player) {
     const height = gameConfig.height;
-    // Semi-transparent background for UI
-    this.add
-      .rectangle(x + width / 2, height / 2, width, height, 0x000000)
-      .setAlpha(0.3);
-  }
-
-  createPlayerUI(player, xPosition) {
-    const color = gameConfig.players[player].color;
     const isPlayer1 = player === "player1";
-    const spacing = 50; // Fixed spacing
+    const xCenter = x + width / 2;
 
-    // Player label
+    // Panel background
     this.add
-      .text(xPosition, spacing * 2, isPlayer1 ? "PLAYER 1" : "PLAYER 2", {
-        fontSize: "24px",
-        fill: color,
-        align: "center",
-      })
-      .setOrigin(0.5);
+      .rectangle(xCenter, height / 2, width - 10, height - 20, 0x000000)
+      .setAlpha(0.3)
+      .setStrokeStyle(1, 0x333333);
 
-    // Score
-    const scoreText = this.add
-      .text(xPosition, spacing * 4, "SCORE: 0", {
+    // Calculate vertical spacing
+    const topMargin = 30;
+    const sectionSpacing = 20;
+    let currentY = topMargin;
+
+    // Player Title
+    this.add
+      .text(xCenter, currentY, isPlayer1 ? "PLAYER 1" : "PLAYER 2", {
         fontSize: "20px",
-        fill: "#FFFFFF",
-        align: "center",
+        fontFamily: "monospace",
+        fill: gameConfig.players[player].color,
       })
       .setOrigin(0.5);
-    this[`${player}Score`] = scoreText;
+    currentY += 40;
 
-    // Next piece section
+    // Score Section
     this.add
-      .text(xPosition, spacing * 6, "NEXT PIECE", {
+      .text(xCenter, currentY, "SCORE", {
         fontSize: "16px",
+        fontFamily: "monospace",
         fill: "#FFFFFF",
-        align: "center",
       })
       .setOrigin(0.5);
+    currentY += 25;
+
+    this[`${player}Score`] = this.add
+      .text(xCenter, currentY, "0", {
+        fontSize: "24px",
+        fontFamily: "monospace",
+        fill: "#FFFFFF",
+      })
+      .setOrigin(0.5);
+    currentY += 45;
+
+    // Next Piece Section
+    this.add
+      .text(xCenter, currentY, "NEXT PIECE", {
+        fontSize: "16px",
+        fontFamily: "monospace",
+        fill: "#FFFFFF",
+      })
+      .setOrigin(0.5);
+    currentY += 30;
 
     // Next piece preview box
-    const preview = this.add
-      .rectangle(xPosition, spacing * 8, 100, 100, 0x333333)
-      .setStrokeStyle(2, 0x666666);
-    this[`${player}Preview`] = preview;
+    const previewSize = Math.min(width * 0.6, 80);
+    const previewBg = this.add
+      .rectangle(
+        xCenter,
+        currentY + previewSize / 2,
+        previewSize,
+        previewSize,
+        0x333333
+      )
+      .setStrokeStyle(1, 0x666666);
+    this[`${player}Preview`] = previewBg;
+    currentY += previewSize + sectionSpacing;
 
-    // Controls section
+    // Controls Section
     this.add
-      .text(xPosition, spacing * 11, "CONTROLS", {
+      .text(xCenter, currentY, "CONTROLS", {
         fontSize: "16px",
+        fontFamily: "monospace",
         fill: "#FFFFFF",
-        align: "center",
       })
       .setOrigin(0.5);
+    currentY += 25;
+
+    // Controls background
+    const controlsBg = this.add
+      .rectangle(xCenter, currentY + 35, width * 0.9, 70, 0x000000, 0.3)
+      .setStrokeStyle(1, 0x333333);
 
     const controls = isPlayer1
-      ? "W - Up\nS - Down\nD - Forward"
-      : "↑ - Up\n↓ - Down\n← - Forward";
+      ? "W - Move Up\nS - Move Down\nD - Move Right"
+      : "↑ - Move Up\n↓ - Move Down\n← - Move Left";
 
     this.add
-      .text(xPosition, spacing * 13, controls, {
+      .text(xCenter, currentY + 35, controls, {
         fontSize: "14px",
+        fontFamily: "monospace",
         fill: "#888888",
         align: "center",
+        lineSpacing: 8,
       })
       .setOrigin(0.5);
   }
@@ -98,23 +127,40 @@ export default class UIScene extends Phaser.Scene {
   updateScore(player, score) {
     const scoreText = this[`${player}Score`];
     if (scoreText) {
-      scoreText.setText(`SCORE: ${score}`);
+      scoreText.setText(score.toString());
     }
   }
 
   updateNextPiece(player, shape) {
-    // Implement next piece preview update logic here
+    const preview = this[`${player}Preview`];
+    if (preview) {
+      // Update preview box color
+      preview.setFillStyle(0x444444);
+
+      // Later we'll add actual piece preview rendering here
+      // This is a placeholder for now
+    }
   }
 
   showGameOver(winningPlayer, scores) {
+    // Create semi-transparent overlay
+    const overlay = this.add
+      .rectangle(0, 0, gameConfig.width, gameConfig.height, 0x000000, 0.7)
+      .setOrigin(0, 0);
+
     const centerX = gameConfig.width / 2;
     const centerY = gameConfig.height / 2;
 
-    this.add.rectangle(centerX, centerY, 400, 200, 0x000000).setAlpha(0.8);
-
+    // Create game over box
     this.add
-      .text(centerX, centerY - 40, "GAME OVER", {
+      .rectangle(centerX, centerY, 400, 200, 0x000000, 0.9)
+      .setStrokeStyle(2, 0x333333);
+
+    // Game Over text
+    this.add
+      .text(centerX, centerY - 50, "GAME OVER", {
         fontSize: "32px",
+        fontFamily: "monospace",
         fill: "#FFFFFF",
       })
       .setOrigin(0.5);
@@ -122,22 +168,50 @@ export default class UIScene extends Phaser.Scene {
     this.add
       .text(centerX, centerY, `${winningPlayer.toUpperCase()} WINS!`, {
         fontSize: "24px",
+        fontFamily: "monospace",
         fill: gameConfig.players[winningPlayer].color,
+      })
+      .setOrigin(0.5);
+
+    this.add
+      .text(centerX, centerY + 50, "Press SPACE to restart", {
+        fontSize: "18px",
+        fontFamily: "monospace",
+        fill: "#888888",
       })
       .setOrigin(0.5);
   }
 
   showPauseMenu(isPaused) {
-    if (!this.pauseText) {
+    if (!this.pauseOverlay) {
+      // Create pause overlay
+      this.pauseOverlay = this.add
+        .rectangle(0, 0, gameConfig.width, gameConfig.height, 0x000000, 0.7)
+        .setOrigin(0, 0)
+        .setVisible(false);
+
+      const centerX = gameConfig.width / 2;
+      const centerY = gameConfig.height / 2;
+
+      // Create pause box
+      this.pauseBox = this.add
+        .rectangle(centerX, centerY, 200, 100, 0x000000, 0.9)
+        .setStrokeStyle(2, 0x333333)
+        .setVisible(false);
+
+      // Create pause text
       this.pauseText = this.add
-        .text(gameConfig.width / 2, gameConfig.height / 2, "PAUSED", {
+        .text(centerX, centerY, "PAUSED", {
           fontSize: "32px",
+          fontFamily: "monospace",
           fill: "#FFFFFF",
         })
         .setOrigin(0.5)
         .setVisible(false);
     }
 
+    this.pauseOverlay.setVisible(isPaused);
+    this.pauseBox.setVisible(isPaused);
     this.pauseText.setVisible(isPaused);
   }
 }
